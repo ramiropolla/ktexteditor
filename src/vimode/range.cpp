@@ -25,7 +25,8 @@
 using namespace KateVi;
 
 Range::Range()
-    : Range(-1, -1, -1, -1, InclusiveMotion)
+    : startLine(-1), startColumn(-1), endLine(-1), endColumn(-1)
+    , motionType(InclusiveMotion), valid(true), jump(false)
 {
 }
 
@@ -36,17 +37,21 @@ Range::Range(int slin, int scol, int elin, int ecol, MotionType inc)
 }
 
 Range::Range(int elin, int ecol, MotionType inc)
-    : Range(-1, -1, elin, ecol, inc)
+    : startLine(-1), startColumn(-1), endLine(elin), endColumn(ecol)
+    , motionType(inc), valid(true), jump(false)
 {
 }
 
 Range::Range(const KTextEditor::Cursor& c, MotionType mt)
-    : Range(-1, -1, c.line(), c.column(), mt)
+    : startLine(-1), startColumn(-1), endLine(c.line()), endColumn(c.column())
+    , motionType(mt), valid(true), jump(false)
 {
 }
 
 Range::Range(const KTextEditor::Cursor& c1, const KTextEditor::Cursor c2, MotionType mt)
-    : Range(c1.line(), c1.column(), c2.line(), c2.column(), mt)
+    : startLine(c1.line()), startColumn(c1.column()), endLine(c2.line()), endColumn(c2.column())
+    , motionType(mt), valid(true), jump(false)
+
 {
 }
 
