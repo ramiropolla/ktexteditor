@@ -301,7 +301,7 @@ void KateTemplateHandler::parseFields(const QString& templateText)
     // create a moving range spanning the given field
     auto createMovingRangeForMatch = [this, startOfMatch](const QRegularExpressionMatch& match) {
         auto matchStart = startOfMatch(match);
-        return doc()->newMovingRange({matchStart, matchStart + Cursor(0, match.capturedLength(0))},
+        return doc()->newMovingRange(Range(matchStart, matchStart + Cursor(0, match.capturedLength(0))),
                                      MovingRange::ExpandLeft | MovingRange::ExpandRight);
     };
 
@@ -417,7 +417,7 @@ const KateTemplateHandler::TemplateField KateTemplateHandler::fieldForRange(cons
             return field;
         }
     }
-    return {};
+    return TemplateField();
 }
 
 void KateTemplateHandler::updateDependentFields(Document *document, const Range &range)
@@ -520,7 +520,7 @@ void KateTemplateHandler::updateDependentFields(Document *document, const Range 
 
 void KateTemplateHandler::updateRangeBehaviours()
 {
-    KTextEditor::Cursor last = {-1, -1};
+    KTextEditor::Cursor last(-1, -1);
     for ( int i = 0; i < m_fields.size(); i++ ) {
         auto field = m_fields.at(i);
         auto end = field.range->end().toCursor();

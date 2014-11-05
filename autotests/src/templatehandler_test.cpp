@@ -47,7 +47,7 @@ void TemplateHandlerTest::testUndo()
     doc->config()->setIndentationWidth(4);
     doc->config()->setReplaceTabsDyn(true);
 
-    view->insertTemplate({0, 0}, snippet);
+    view->insertTemplate(Cursor(0, 0), snippet);
 
     const QString result = "for (int i = ; i < ; ++i)\n"
                            "{\n"
@@ -99,7 +99,7 @@ void TemplateHandlerTest::testEscapes()
 {
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
-    view->insertTemplate({0, 0}, QStringLiteral("\\${field} ${bar} \\${foo=3} \\\\${baz=7}"));
+    view->insertTemplate(Cursor(0, 0), QStringLiteral("\\${field} ${bar} \\${foo=3} \\\\${baz=7}"));
     QCOMPARE(doc->text(), QStringLiteral("${field} bar ${foo=3} \\${baz=7}"));
 }
 
@@ -109,14 +109,14 @@ void TemplateHandlerTest::testSimpleMirror()
 
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
-    view->insertTemplate({0, 0}, text);
+    view->insertTemplate(Cursor(0, 0), text);
 
     QCOMPARE(doc->text(), QString(text).replace("${foo}", "foo"));
 
-    doc->insertText({0, 0}, "xx");
+    doc->insertText(Cursor(0, 0), "xx");
     QCOMPARE(doc->text(), QString(text).replace("${foo}", "xxfoo"));
 
-    doc->removeText(KTextEditor::Range({0, 0}, {0, 2}));
+    doc->removeText(KTextEditor::Range(0, 0, 0, 2));
     QCOMPARE(doc->text(), QString(text).replace("${foo}", "foo"));
 
     delete doc;
@@ -135,17 +135,16 @@ void TemplateHandlerTest::testAdjacentRanges()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    using S = QString;
-    view->insertTemplate({0, 0}, S("${foo} ${foo}"));
-    QCOMPARE(doc->text(), S("foo foo"));
-    doc->removeText(KTextEditor::Range({0, 3}, {0, 4}));
-    QCOMPARE(doc->text(), S("foofoo"));
-    doc->insertText({0, 1}, S("x"));
-    QCOMPARE(doc->text(), S("fxoofxoo"));
-    doc->insertText({0, 4}, S("y"));
-    QCOMPARE(doc->text(), S("fxooyfxooy"));
-    doc->removeText(KTextEditor::Range({0, 4}, {0, 5}));
-    QCOMPARE(doc->text(), S("fxoofxoo"));
+    view->insertTemplate(Cursor(0, 0), QString("${foo} ${foo}"));
+    QCOMPARE(doc->text(), QString("foo foo"));
+    doc->removeText(KTextEditor::Range(0, 3, 0, 4));
+    QCOMPARE(doc->text(), QString("foofoo"));
+    doc->insertText(Cursor(0, 1), QString("x"));
+    QCOMPARE(doc->text(), QString("fxoofxoo"));
+    doc->insertText(Cursor(0, 4), QString("y"));
+    QCOMPARE(doc->text(), QString("fxooyfxooy"));
+    doc->removeText(KTextEditor::Range(0, 4, 0, 5));
+    QCOMPARE(doc->text(), QString("fxoofxoo"));
 
     delete doc;
 }
@@ -158,8 +157,8 @@ void TemplateHandlerTest::testTab()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    view->insertTemplate({0, 0}, tpl);
-    view->setCursorPosition({0, cursor});
+    view->insertTemplate(Cursor(0, 0), tpl);
+    view->setCursorPosition(Cursor(0, cursor));
 
     // no idea why the event needs to be posted to the focus proxy
     QTest::keyClick(view->focusProxy(), Qt::Key_Tab);
@@ -199,8 +198,8 @@ void TemplateHandlerTest::testExitAtCursor()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    view->insertTemplate({0, 0}, QStringLiteral("${foo} ${bar} ${cursor} ${foo}"));
-    view->setCursorPosition({0, 0});
+    view->insertTemplate(Cursor(0, 0), QStringLiteral("${foo} ${bar} ${cursor} ${foo}"));
+    view->setCursorPosition(Cursor(0, 0));
 
     // check it jumps to the cursor
     QTest::keyClick(view->focusProxy(), Qt::Key_Tab);
@@ -218,7 +217,7 @@ void TemplateHandlerTest::testExitAtCursor()
     QApplication::processEvents();
 
     // go to the first field and verify it's not mirrored any more (i.e. the handler exited)
-    view->setCursorPosition({0, 0});
+    view->setCursorPosition(Cursor(0, 0));
     QTest::keyClick(view->focusProxy(), Qt::Key_A);
     QCOMPARE(doc->text(), QStringLiteral("afoo bar a foo"));
 
@@ -230,11 +229,11 @@ void TemplateHandlerTest::testDefaultMirror()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    using S = QString;
-    view->insertTemplate({0, 0}, S("${foo=uppercase(\"hi\")} ${bar=3} ${foo}"),
+    typedef QString S;
+    view->insertTemplate(Cursor(0, 0), S("${foo=uppercase(\"hi\")} ${bar=3} ${foo}"),
                              S("function uppercase(x) { return x.toUpperCase(); }"));
     QCOMPARE(doc->text(), S("HI 3 HI"));
-    doc->insertText({0, 0}, "xy@");
+    doc->insertText(Cursor(0, 0), "xy@");
     QCOMPARE(doc->text(), S("xy@HI 3 xy@HI"));
 
     delete doc;
@@ -245,11 +244,11 @@ void TemplateHandlerTest::testFunctionMirror()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    using S = QString;
-    view->insertTemplate({0, 0}, S("${foo} hi ${uppercase(foo)}"),
+    typedef QString S;
+    view->insertTemplate(Cursor(0, 0), S("${foo} hi ${uppercase(foo)}"),
                             S("function uppercase(x) { return x.toUpperCase(); }"));
     QCOMPARE(doc->text(), S("foo hi FOO"));
-    doc->insertText({0, 0}, "xy@");
+    doc->insertText(Cursor(0, 0), "xy@");
     QCOMPARE(doc->text(), S("xy@foo hi XY@FOO"));
 
     delete doc;
@@ -260,7 +259,7 @@ void TemplateHandlerTest::testAutoSelection()
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
 
-    view->insertTemplate({0, 0}, "${foo} ${bar} ${bar} ${cursor} ${baz}");
+    view->insertTemplate(Cursor(0, 0), "${foo} ${bar} ${bar} ${cursor} ${baz}");
     QCOMPARE(doc->text(), QStringLiteral("foo bar bar  baz"));
     QCOMPARE(view->selectionText(), QStringLiteral("foo"));
 
@@ -292,9 +291,9 @@ void TemplateHandlerTest::testNotEditableFields()
 
     auto doc = new KTextEditor::DocumentPrivate(false, false, 0, 0);
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
-    view->insertTemplate({0, 0}, input);
+    view->insertTemplate(Cursor(0, 0), input);
 
-    doc->insertText({0, change_offset}, "xxx");
+    doc->insertText(Cursor(0, change_offset), "xxx");
     QTEST(doc->text(), "expected");
 }
 
@@ -304,7 +303,7 @@ void TemplateHandlerTest::testNotEditableFields_data()
     QTest::addColumn<int>("change_offset");
     QTest::addColumn<QString>("expected");
 
-    using S = QString;
+    typedef QString S;
     QTest::newRow("mirror") << S("${foo} ${foo}") << 6 << "foo foxxxo";
 }
 
@@ -314,7 +313,7 @@ void TemplateHandlerTest::testCanRetrieveSelection()
     auto view = static_cast<KTextEditor::ViewPrivate*>(doc->createView(nullptr));
     view->insertText("hi world");
     view->setSelection(KTextEditor::Range(0, 1, 0, 4));
-    view->insertTemplate({0, 1}, QStringLiteral("xx${foo=sel()}xx"),
+    view->insertTemplate(Cursor(0, 1), QStringLiteral("xx${foo=sel()}xx"),
         QStringLiteral("function sel() { return view.selectedText(); }")
     );
     QCOMPARE(doc->text(), QStringLiteral("hxxi wxxorld"));
@@ -326,7 +325,7 @@ void TemplateHandlerTest::testDefaults_data()
     QTest::addColumn<QString>("expected");
     QTest::addColumn<QString>("function");
 
-    using S = QString;
+    typedef QString S;
     QTest::newRow("empty") << S() << S() << S();
     QTest::newRow("foo") << S("${foo}") << S("foo") << S();
     QTest::newRow("foo=3") << S("${foo=3}") << S("3") << S();
@@ -352,7 +351,7 @@ void TemplateHandlerTest::testDefaults()
     QFETCH(QString, input);
     QFETCH(QString, function);
 
-    view->insertTemplate({0, 0}, input, function);
+    view->insertTemplate(Cursor(0, 0), input, function);
     QTEST(doc->text(), "expected");
 
     view->selectAll();
