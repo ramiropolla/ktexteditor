@@ -362,7 +362,7 @@ private:
     bool editIsRunning;
     bool m_undoMergeAllEdits;
     QStack<QSharedPointer<KTextEditor::MovingCursor>> m_editingStack;
-    int m_editingStackPosition = -1;
+    int m_editingStackPosition;
     static const int s_editingStackSizeLimit = 32;
 
     //
