@@ -219,9 +219,11 @@ private:
             FunctionCall, // field containing the up-to-date result of a function call [dependent field]
             FinalCursorPosition // field marking the final cursor position
         };
-        Kind kind = Invalid;
+        Kind kind;
         // true if this field was edited by the user before
-        bool touched = false;
+        bool touched;
+
+        TemplateField(): kind(Invalid), touched(false) {}
         bool operator==(const TemplateField& other) {
             return range == other.range;
         }
