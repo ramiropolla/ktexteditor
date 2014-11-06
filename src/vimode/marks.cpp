@@ -167,7 +167,7 @@ void Marks::syncViMarksAndBookmarks()
     const QHash<int, KTextEditor::Mark *> &marks = m_doc->marks();
 
     //  Each bookmark should have a vi mark on the same line.
-    for (auto mark : marks) {
+    Q_FOREACH (const KTextEditor::Mark* mark, marks) {
         if (!(mark->type & KTextEditor::MarkInterface::markType01)) {
             continue;
         }
@@ -199,7 +199,7 @@ void Marks::syncViMarksAndBookmarks()
         }
 
         bool thereIsKateMarkForThisLine = false;
-        for (auto mark : marks) {
+        Q_FOREACH (const KTextEditor::Mark* mark, marks) {
             if (!(mark->type & KTextEditor::MarkInterface::markType01)) {
                 continue;
             }

@@ -161,7 +161,7 @@ void ScriptTestBase::runTest(const ExpectedFailures &failures)
             QTextStream(stdout) << out << endl;
         }
 
-        for (const Failure &failure : failures) {
+        Q_FOREACH (const Failure &failure, failures) {
             QEXPECT_FAIL(failure.first, failure.second, Abort);
         }
 
