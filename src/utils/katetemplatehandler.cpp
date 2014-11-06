@@ -124,10 +124,10 @@ void KateTemplateHandler::sortFields()
 {
     std::sort(m_fields.begin(), m_fields.end(), [](const TemplateField& l, const TemplateField& r) -> bool {
         // always sort the final cursor pos last
-        if ( l.kind == TemplateField::FinalCursorPosition ) {
+        if ( l.kind == KateTemplateHandler::TemplateField::FinalCursorPosition ) {
             return false;
         }
-        if ( r.kind == TemplateField::FinalCursorPosition ) {
+        if ( r.kind == KateTemplateHandler::TemplateField::FinalCursorPosition ) {
             return true;
         }
         // sort by range
@@ -170,7 +170,7 @@ void KateTemplateHandler::jump(int by, bool initial)
         for ( int i = from_field_index + by; ; i += by ) {
             auto wrapped_i = wrap(i);
             auto kind = m_fields.at(wrapped_i).kind;
-            if ( kind == TemplateField::Editable || kind == TemplateField::FinalCursorPosition ) {
+            if ( kind == KateTemplateHandler::TemplateField::Editable || kind == KateTemplateHandler::TemplateField::FinalCursorPosition ) {
                 // found an editable field by walking into the desired direction
                 return wrapped_i;
             }
