@@ -122,7 +122,7 @@ KateTemplateHandler::~KateTemplateHandler()
 
 void KateTemplateHandler::sortFields()
 {
-    std::sort(m_fields.begin(), m_fields.end(), [](const TemplateField& l, const TemplateField& r) {
+    std::sort(m_fields.begin(), m_fields.end(), [](const TemplateField& l, const TemplateField& r) -> bool {
         // always sort the final cursor pos last
         if ( l.kind == TemplateField::FinalCursorPosition ) {
             return false;
@@ -166,7 +166,7 @@ void KateTemplateHandler::jump(int by, bool initial)
 
     pos = wrap(pos);
     // choose field to jump to, including wrap-around
-    auto choose_next_field = [this, by, wrap](unsigned int from_field_index) {
+    auto choose_next_field = [this, by, wrap](unsigned int from_field_index) -> unsigned int {
         for ( int i = from_field_index + by; ; i += by ) {
             auto wrapped_i = wrap(i);
             auto kind = m_fields.at(wrapped_i).kind;
@@ -288,7 +288,7 @@ void KateTemplateHandler::parseFields(const QString& templateText)
     QRegularExpression defaultField(QStringLiteral("\\w+=([^\\}]*)"));
 
     // compute start cursor of a match
-    auto startOfMatch = [this, &templateText](const QRegularExpressionMatch& match) {
+    auto startOfMatch = [this, &templateText](const QRegularExpressionMatch& match) -> Cursor {
         const auto offset = match.capturedStart(0);
         const auto left = templateText.left(offset);
         const auto nl = QLatin1Char('\n');
@@ -299,7 +299,7 @@ void KateTemplateHandler::parseFields(const QString& templateText)
     };
 
     // create a moving range spanning the given field
-    auto createMovingRangeForMatch = [this, startOfMatch](const QRegularExpressionMatch& match) {
+    auto createMovingRangeForMatch = [this, startOfMatch](const QRegularExpressionMatch& match) -> MovingRange* {
         auto matchStart = startOfMatch(match);
         return doc()->newMovingRange(Range(matchStart, matchStart + Cursor(0, match.capturedLength(0))),
                                      MovingRange::ExpandLeft | MovingRange::ExpandRight);
