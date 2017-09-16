@@ -3,7 +3,6 @@ file(GLOB_RECURSE ALL_FILES
     RELATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}
     "libraries/*.*"
     "commands/*.*"
-    "indentation/*.*"
     "files/*.*")
 
 # generate the resource file
