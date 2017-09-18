@@ -94,21 +94,127 @@ KateAutoIndent::~KateAutoIndent()
 
 QString KateAutoIndent::tabString(int length, int align) const
 {
-    return QString();
+    QString s;
+    length = qMin(length, 256);  // sanity check for large values of pos
+    int spaces = qBound(0, align - length, 256);
+
+    if (!useSpaces) {
+        s.append(QString(length / tabWidth, QLatin1Char('\t')));
+        length = length % tabWidth;
+    }
+    s.append(QString(length + spaces, QLatin1Char(' ')));
+
+    return s;
 }
 
 bool KateAutoIndent::doIndent(int line, int indentDepth, int align)
 {
-    return false;
+    Kate::TextLine textline = doc->plainKateTextLine(line);
+
+    // textline not found, cu
+    if (!textline) {
+        return false;
+    }
+
+    // sanity check
+    if (indentDepth < 0) {
+        indentDepth = 0;
+    }
+
+    const QString oldIndentation = textline->leadingWhitespace();
+
+    // Preserve existing "tabs then spaces" alignment if and only if:
+    //  - no alignment was passed to doIndent and
+    //  - we aren't using spaces for indentation and
+    //  - we aren't rounding indentation up to the next multiple of the indentation width and
+    //  - we aren't using a combination to tabs and spaces for alignment, or in other words
+    //    the indent width is a multiple of the tab width.
+    bool preserveAlignment = !useSpaces && keepExtra && indentWidth % tabWidth == 0;
+    if (align == 0 && preserveAlignment) {
+        // Count the number of consecutive spaces at the end of the existing indentation
+        int i = oldIndentation.size() - 1;
+        while (i >= 0 && oldIndentation.at(i) == QLatin1Char(' ')) {
+            --i;
+        }
+        // Use the passed indentDepth as the alignment, and set the indentDepth to
+        // that value minus the number of spaces found (but don't let it get negative).
+        align = indentDepth;
+        indentDepth = qMax(0, align - (oldIndentation.size() - 1 - i));
+    }
+
+    QString indentString = tabString(indentDepth, align);
+
+    // Modify the document *ONLY* if smth has really changed!
+    if (oldIndentation != indentString) {
+        // remove leading whitespace, then insert the leading indentation
+        doc->editStart();
+        doc->editRemoveText(line, 0, oldIndentation.length());
+        doc->editInsertText(line, 0, indentString);
+        doc->editEnd();
+    }
+
+    return true;
 }
 
 bool KateAutoIndent::doIndentRelative(int line, int change)
 {
-    return false;
+    Kate::TextLine textline = doc->plainKateTextLine(line);
+
+    // get indent width of current line
+    int indentDepth = textline->indentDepth(tabWidth);
+    int extraSpaces = indentDepth % indentWidth;
+
+    // add change
+    indentDepth += change;
+
+    // if keepExtra is off, snap to a multiple of the indentWidth
+    if (!keepExtra && extraSpaces > 0) {
+        if (change < 0) {
+            indentDepth += indentWidth - extraSpaces;
+        } else {
+            indentDepth -= extraSpaces;
+        }
+    }
+
+    // do indent
+    return doIndent(line, indentDepth);
 }
 
 void KateAutoIndent::keepIndent(int line)
 {
+    // no line in front, no work...
+    if (line <= 0) {
+        return;
+    }
+
+    // keep indentation: find line with content
+    int nonEmptyLine = line - 1;
+    while (nonEmptyLine >= 0) {
+        if (doc->lineLength(nonEmptyLine) > 0) {
+            break;
+        }
+        --nonEmptyLine;
+    }
+    Kate::TextLine prevTextLine = doc->plainKateTextLine(nonEmptyLine);
+    Kate::TextLine textLine     = doc->plainKateTextLine(line);
+
+    // textline not found, cu
+    if (!prevTextLine || !textLine) {
+        return;
+    }
+
+    const QString previousWhitespace = prevTextLine->leadingWhitespace();
+
+    // remove leading whitespace, then insert the leading indentation
+    doc->editStart();
+
+    if (!keepExtra) {
+        const QString currentWhitespace = textLine->leadingWhitespace();
+        doc->editRemoveText(line, 0, currentWhitespace.length());
+    }
+
+    doc->editInsertText(line, 0, previousWhitespace);
+    doc->editEnd();
 }
 
 void KateAutoIndent::reloadScript()
@@ -151,6 +257,32 @@ void KateAutoIndent::updateConfig()
 
 bool KateAutoIndent::changeIndent(const KTextEditor::Range &range, int change)
 {
+    QList<int> skippedLines;
+
+    // loop over all lines given...
+    for (int line = range.start().line() < 0 ? 0 : range.start().line();
+            line <= qMin(range.end().line(), doc->lines() - 1); ++line) {
+        // don't indent empty lines
+        if (doc->line(line).isEmpty()) {
+            skippedLines.append(line);
+            continue;
+        }
+        // don't indent the last line when the cursor is on the first column
+        if (line == range.end().line() && range.end().column() == 0) {
+            skippedLines.append(line);
+            continue;
+        }
+
+        doIndentRelative(line, change * indentWidth);
+    }
+
+    if (skippedLines.count() > range.numberOfLines()) {
+        // all lines were empty, so indent them nevertheless
+        foreach (int line, skippedLines) {
+            doIndentRelative(line, change * indentWidth);
+        }
+    }
+
     return true;
 }
 
