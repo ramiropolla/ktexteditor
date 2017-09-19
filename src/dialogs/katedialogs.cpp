@@ -1335,7 +1335,7 @@ KateModOnHdPrompt::KateModOnHdPrompt(KTextEditor::DocumentPrivate *doc,
     , m_diffAction(nullptr)
 {
     m_message = new KTextEditor::Message(reason, KTextEditor::Message::Information);
-    m_message->setPosition(KTextEditor::Message::AboveView);
+    m_message->setPosition(KTextEditor::Message::BelowView);
     m_message->setWordWrap(true);
 
     // If the file isn't deleted, present a diff button
